@@ -1,0 +1,1389 @@
+// hnn_40Dlg.cpp : implementation file
+//
+
+#include "stdafx.h"
+#include "hnn_40.h"
+#include "hnn_40Dlg.h"
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#undef THIS_FILE
+static char THIS_FILE[] = __FILE__;
+#endif
+
+//-----전체 알고리즘에 적용될 node수와 destination수-----//
+#define NODE 40
+#define TNODE 6
+//-----전체에 적용될 parameter의 값-----//
+#define DELTA 0.0001
+#define TAU 1
+#define LAMBDA 1
+
+//-----Ali & Kamoun's coefficient-----//
+#define ALI_Mu1 550
+#define ALI_Mu2 2550
+#define ALI_Mu3 1950
+#define ALI_Mu4 250
+#define ALI_Mu5 1350
+
+//-----Park & Choi's coefficient-----//
+#define PARK_A 550
+#define PARK_B 2550
+#define PARK_C 1500
+#define PARK_D 250
+#define PARK_F 1350
+
+//-----Ahn & Ramakrishna's coefficient-----//
+#define Mu1 950
+#define Mu2 2500
+#define Mu3 1500
+#define Mu4 475
+#define Mu5 500
+#define Mu6 400
+#define Mu7 400
+
+//-----Proposed Algorithm's coefficient-----//
+#define A 950
+#define B 2500
+#define C 1900
+#define D 100
+#define F 500
+
+double U[NODE][NODE];
+double V[NODE][NODE];
+double Cost[NODE][NODE];
+int Gamma[NODE][NODE];
+
+int SD[TNODE];
+int SD_order[TNODE][NODE];
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// CAboutDlg dialog used for App About
+
+class CAboutDlg : public CDialog
+{
+public:
+	CAboutDlg();
+
+// Dialog Data
+	//{{AFX_DATA(CAboutDlg)
+	enum { IDD = IDD_ABOUTBOX };
+	//}}AFX_DATA
+
+	// ClassWizard generated virtual function overrides
+	//{{AFX_VIRTUAL(CAboutDlg)
+	protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	//}}AFX_VIRTUAL
+
+// Implementation
+protected:
+	//{{AFX_MSG(CAboutDlg)
+	//}}AFX_MSG
+	DECLARE_MESSAGE_MAP()
+};
+
+CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
+{
+	//{{AFX_DATA_INIT(CAboutDlg)
+	//}}AFX_DATA_INIT
+}
+
+void CAboutDlg::DoDataExchange(CDataExchange* pDX)
+{
+	CDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CAboutDlg)
+	//}}AFX_DATA_MAP
+}
+
+BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
+	//{{AFX_MSG_MAP(CAboutDlg)
+		// No message handlers
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
+
+/////////////////////////////////////////////////////////////////////////////
+// CHnn_40Dlg dialog
+
+CHnn_40Dlg::CHnn_40Dlg(CWnd* pParent /*=NULL*/)
+	: CDialog(CHnn_40Dlg::IDD, pParent)
+{
+	//{{AFX_DATA_INIT(CHnn_40Dlg)
+	m_nIn01 = 861.0;m_nIn02 = 644.0;m_nIn03 = 868.0;m_nIn04 = 426.0;m_nIn05 = 438.0;
+	m_nIn06 = 630.0;m_nIn07 = 470.0;m_nIn08 = 865.0;m_nIn09 = 488.0;m_nIn10 = 445.0;
+	m_nIn11 = 812.0;m_nIn13 = 774.0;m_nIn12 = 945.0;m_nIn14 = 994.0;m_nIn15 = 30.0;
+	m_nIn16 = 743.0;m_nIn17 = 39.0;m_nIn18 = 823.0;m_nIn19 = 924.0;m_nIn20 = 451.0;
+	m_nIn21 = 629.0;m_nIn22 = 688.0;m_nIn23 = 943.0;m_nIn24 = 399.0;m_nIn25 = 542.0;
+	m_nIn26 = 21.0;m_nIn27 = 847.0;m_nIn28 = 369.0;m_nIn29 = 633.0;m_nIn30 = 405.0;
+	m_nIn31 = 671.0;m_nIn32 = 554.0;m_nIn33 = 536.0;m_nIn34 = 617.0;m_nIn35 = 626.0;
+	m_nIn36 = 822.0;m_nIn37 = 149.0;m_nIn38 = 353.0;m_nIn39 = 62.0;m_nIn40 = 958.0;
+	m_nIn41 = 522.0;m_nIn42 = 509.0;m_nIn43 = 63.0;m_nIn44 = 690.0;m_nIn45 = 804.0;
+	m_nIn46 = 615.0;m_nIn47 = 71.0;m_nIn48 = 735.0;m_nIn49 = 611.0;m_nIn50 = 615.0;
+	m_nIn51 = 755.0;m_nIn52 = 943.0;m_nIn53 = 995.0;m_nIn54 = 720.0;m_nIn55 = 610.0;
+	m_nIn56 = 60.0;m_nIn57 = 757.0;m_nIn58 = 895.0;m_nIn59 = 710.0;m_nIn60 = 595.0;
+	m_nIn61 = 287.0;m_nIn62 = 946.0;m_nIn63 = 873.0;m_nIn64 = 53.0;m_nIn65 = 704.0;
+	m_nIn66 = 967.0;m_nIn67 = 363.0;m_nIn68 = 550.0;m_nIn69 = 45.0;m_nIn70 = 874.0;
+	m_nIn71 = 584.0;m_nIn72 = 223.0;m_nIn73 = 502.0;m_nIn74 = 160.0;m_nIn75 = 727.0;
+	m_nIn76 = 703.0;m_nIn77 = 349.0;m_nIn78 = 97.0;m_nIn79 = 666.0;m_nIn80 = 207.0;
+	m_strAli = _T("");m_strAhn = _T("");m_strChoi = _T("");m_strPro = _T("");
+	m_nTotalAHN = 0.0;
+	m_nTotalALI = 0.0;
+	m_nTotalCHOI = 0.0;
+	m_nTotalPRO = 0.0;
+	m_strShow = _T("");
+	//}}AFX_DATA_INIT
+	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+}
+
+void CHnn_40Dlg::DoDataExchange(CDataExchange* pDX)
+{
+	CDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CHnn_40Dlg)
+	DDX_Control(pDX, IDC_PROGRESS, m_cProgress);
+	DDX_Text(pDX, IDC_EDIT_IN01, m_nIn01);
+	DDX_Text(pDX, IDC_EDIT_IN02, m_nIn02);
+	DDX_Text(pDX, IDC_EDIT_IN03, m_nIn03);
+	DDX_Text(pDX, IDC_EDIT_IN04, m_nIn04);
+	DDX_Text(pDX, IDC_EDIT_IN05, m_nIn05);
+	DDX_Text(pDX, IDC_EDIT_IN06, m_nIn06);
+	DDX_Text(pDX, IDC_EDIT_IN07, m_nIn07);
+	DDX_Text(pDX, IDC_EDIT_IN08, m_nIn08);
+	DDX_Text(pDX, IDC_EDIT_IN09, m_nIn09);
+	DDX_Text(pDX, IDC_EDIT_IN10, m_nIn10);
+	DDX_Text(pDX, IDC_EDIT_IN11, m_nIn11);
+	DDX_Text(pDX, IDC_EDIT_IN13, m_nIn13);
+	DDX_Text(pDX, IDC_EDIT_IN12, m_nIn12);
+	DDX_Text(pDX, IDC_EDIT_IN14, m_nIn14);
+	DDX_Text(pDX, IDC_EDIT_IN15, m_nIn15);
+	DDX_Text(pDX, IDC_EDIT_IN16, m_nIn16);
+	DDX_Text(pDX, IDC_EDIT_IN17, m_nIn17);
+	DDX_Text(pDX, IDC_EDIT_IN18, m_nIn18);
+	DDX_Text(pDX, IDC_EDIT_IN19, m_nIn19);
+	DDX_Text(pDX, IDC_EDIT_IN20, m_nIn20);
+	DDX_Text(pDX, IDC_EDIT_IN21, m_nIn21);
+	DDX_Text(pDX, IDC_EDIT_IN22, m_nIn22);
+	DDX_Text(pDX, IDC_EDIT_IN23, m_nIn23);
+	DDX_Text(pDX, IDC_EDIT_IN24, m_nIn24);
+	DDX_Text(pDX, IDC_EDIT_IN25, m_nIn25);
+	DDX_Text(pDX, IDC_EDIT_IN26, m_nIn26);
+	DDX_Text(pDX, IDC_EDIT_IN27, m_nIn27);
+	DDX_Text(pDX, IDC_EDIT_IN28, m_nIn28);
+	DDX_Text(pDX, IDC_EDIT_IN29, m_nIn29);
+	DDX_Text(pDX, IDC_EDIT_IN30, m_nIn30);
+	DDX_Text(pDX, IDC_EDIT_IN31, m_nIn31);
+	DDX_Text(pDX, IDC_EDIT_IN32, m_nIn32);
+	DDX_Text(pDX, IDC_EDIT_IN33, m_nIn33);
+	DDX_Text(pDX, IDC_EDIT_IN34, m_nIn34);
+	DDX_Text(pDX, IDC_EDIT_IN35, m_nIn35);
+	DDX_Text(pDX, IDC_EDIT_IN36, m_nIn36);
+	DDX_Text(pDX, IDC_EDIT_IN37, m_nIn37);
+	DDX_Text(pDX, IDC_EDIT_IN38, m_nIn38);
+	DDX_Text(pDX, IDC_EDIT_IN39, m_nIn39);
+	DDX_Text(pDX, IDC_EDIT_IN40, m_nIn40);
+	DDX_Text(pDX, IDC_EDIT_IN41, m_nIn41);
+	DDX_Text(pDX, IDC_EDIT_IN42, m_nIn42);
+	DDX_Text(pDX, IDC_EDIT_IN43, m_nIn43);
+	DDX_Text(pDX, IDC_EDIT_IN44, m_nIn44);
+	DDX_Text(pDX, IDC_EDIT_IN45, m_nIn45);
+	DDX_Text(pDX, IDC_EDIT_IN46, m_nIn46);
+	DDX_Text(pDX, IDC_EDIT_IN47, m_nIn47);
+	DDX_Text(pDX, IDC_EDIT_IN48, m_nIn48);
+	DDX_Text(pDX, IDC_EDIT_IN49, m_nIn49);
+	DDX_Text(pDX, IDC_EDIT_IN50, m_nIn50);
+	DDX_Text(pDX, IDC_EDIT_IN51, m_nIn51);
+	DDX_Text(pDX, IDC_EDIT_IN52, m_nIn52);
+	DDX_Text(pDX, IDC_EDIT_IN53, m_nIn53);
+	DDX_Text(pDX, IDC_EDIT_IN54, m_nIn54);
+	DDX_Text(pDX, IDC_EDIT_IN55, m_nIn55);
+	DDX_Text(pDX, IDC_EDIT_IN56, m_nIn56);
+	DDX_Text(pDX, IDC_EDIT_IN57, m_nIn57);
+	DDX_Text(pDX, IDC_EDIT_IN58, m_nIn58);
+	DDX_Text(pDX, IDC_EDIT_IN59, m_nIn59);
+	DDX_Text(pDX, IDC_EDIT_IN60, m_nIn60);
+	DDX_Text(pDX, IDC_EDIT_IN61, m_nIn61);
+	DDX_Text(pDX, IDC_EDIT_IN62, m_nIn62);
+	DDX_Text(pDX, IDC_EDIT_IN63, m_nIn63);
+	DDX_Text(pDX, IDC_EDIT_IN64, m_nIn64);
+	DDX_Text(pDX, IDC_EDIT_IN65, m_nIn65);
+	DDX_Text(pDX, IDC_EDIT_IN66, m_nIn66);
+	DDX_Text(pDX, IDC_EDIT_IN67, m_nIn67);
+	DDX_Text(pDX, IDC_EDIT_IN68, m_nIn68);
+	DDX_Text(pDX, IDC_EDIT_IN69, m_nIn69);
+	DDX_Text(pDX, IDC_EDIT_IN70, m_nIn70);
+	DDX_Text(pDX, IDC_EDIT_IN71, m_nIn71);
+	DDX_Text(pDX, IDC_EDIT_IN72, m_nIn72);
+	DDX_Text(pDX, IDC_EDIT_IN73, m_nIn73);
+	DDX_Text(pDX, IDC_EDIT_IN74, m_nIn74);
+	DDX_Text(pDX, IDC_EDIT_IN75, m_nIn75);
+	DDX_Text(pDX, IDC_EDIT_IN76, m_nIn76);
+	DDX_Text(pDX, IDC_EDIT_IN77, m_nIn77);
+	DDX_Text(pDX, IDC_EDIT_IN78, m_nIn78);
+	DDX_Text(pDX, IDC_EDIT_IN79, m_nIn79);
+	DDX_Text(pDX, IDC_EDIT_IN80, m_nIn80);
+	DDX_Text(pDX, IDC_EDIT_PATH_ALI, m_strAli);
+	DDX_Text(pDX, IDC_EDIT_PATH_AHN, m_strAhn);
+	DDX_Text(pDX, IDC_EDIT_PATH_CHOI, m_strChoi);
+	DDX_Text(pDX, IDC_EDIT_PATH_PRO, m_strPro);
+	DDX_Text(pDX, IDC_EDIT_TOTAL_AHN, m_nTotalAHN);
+	DDX_Text(pDX, IDC_EDIT_TOTAL_ALI, m_nTotalALI);
+	DDX_Text(pDX, IDC_EDIT_TOTAL_CHOI, m_nTotalCHOI);
+	DDX_Text(pDX, IDC_EDIT_TOTAL_PRO, m_nTotalPRO);
+	DDX_Text(pDX, IDC_EDIT_SHOW, m_strShow);
+	//}}AFX_DATA_MAP
+}
+
+BEGIN_MESSAGE_MAP(CHnn_40Dlg, CDialog)
+	//{{AFX_MSG_MAP(CHnn_40Dlg)
+	ON_WM_SYSCOMMAND()
+	ON_WM_PAINT()
+	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDC_BUTTON_RAND, OnButtonRand)
+	ON_BN_CLICKED(IDC_BUTTON_PRO, OnButtonPro)
+	ON_BN_CLICKED(IDC_BUTTON_ALI, OnButtonAli)
+	ON_BN_CLICKED(IDC_BUTTON_CHOI, OnButtonChoi)
+	ON_BN_CLICKED(IDC_BUTTON_AHN, OnButtonAhn)
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
+
+/////////////////////////////////////////////////////////////////////////////
+// CHnn_40Dlg message handlers
+
+BOOL CHnn_40Dlg::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+
+	// Add "About..." menu item to system menu.
+
+	// IDM_ABOUTBOX must be in the system command range.
+	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
+	ASSERT(IDM_ABOUTBOX < 0xF000);
+
+	CMenu* pSysMenu = GetSystemMenu(FALSE);
+	if (pSysMenu != NULL)
+	{
+		CString strAboutMenu;
+		strAboutMenu.LoadString(IDS_ABOUTBOX);
+		if (!strAboutMenu.IsEmpty())
+		{
+			pSysMenu->AppendMenu(MF_SEPARATOR);
+			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
+		}
+	}
+
+	// Set the icon for this dialog.  The framework does this automatically
+	//  when the application's main window is not a dialog
+	SetIcon(m_hIcon, TRUE);			// Set big icon
+	SetIcon(m_hIcon, FALSE);		// Set small icon
+	
+	// TODO: Add extra initialization here
+	
+	return TRUE;  // return TRUE  unless you set the focus to a control
+}
+
+void CHnn_40Dlg::OnSysCommand(UINT nID, LPARAM lParam)
+{
+	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
+	{
+		CAboutDlg dlgAbout;
+		dlgAbout.DoModal();
+	}
+	else
+	{
+		CDialog::OnSysCommand(nID, lParam);
+	}
+}
+
+// If you add a minimize button to your dialog, you will need the code below
+//  to draw the icon.  For MFC applications using the document/view model,
+//  this is automatically done for you by the framework.
+
+void CHnn_40Dlg::OnPaint() 
+{
+	if (IsIconic())
+	{
+		CPaintDC dc(this); // device context for painting
+
+		SendMessage(WM_ICONERASEBKGND, (WPARAM) dc.GetSafeHdc(), 0);
+
+		// Center icon in client rectangle
+		int cxIcon = GetSystemMetrics(SM_CXICON);
+		int cyIcon = GetSystemMetrics(SM_CYICON);
+		CRect rect;
+		GetClientRect(&rect);
+		int x = (rect.Width() - cxIcon + 1) / 2;
+		int y = (rect.Height() - cyIcon + 1) / 2;
+
+		// Draw the icon
+		dc.DrawIcon(x, y, m_hIcon);
+	}
+	else
+	{
+		CDialog::OnPaint();
+	}
+}
+
+// The system calls this to obtain the cursor to display while the user drags
+//  the minimized window.
+HCURSOR CHnn_40Dlg::OnQueryDragIcon()
+{
+	return (HCURSOR) m_hIcon;
+}
+
+void CHnn_40Dlg::randmize()
+{
+	time_t t;
+	srand((unsigned)time(&t));
+}
+
+double CHnn_40Dlg::rnd()
+{
+	int r1, r2;
+	r1=rand();
+	r2=r1%1000;
+	return((double)r2);
+}
+
+
+//-----각 link cost값을 random하게 발생 시키는 부분-----//
+void CHnn_40Dlg::OnButtonRand() 
+{
+	// TODO: Add your control notification handler code here
+	CHnn_40Dlg::randmize();
+	
+	m_nIn01 = CHnn_40Dlg::rnd();
+	m_nIn02 = CHnn_40Dlg::rnd();m_nIn03 = CHnn_40Dlg::rnd();m_nIn04 = CHnn_40Dlg::rnd();
+	m_nIn05 = CHnn_40Dlg::rnd();m_nIn06 = CHnn_40Dlg::rnd();m_nIn07 = CHnn_40Dlg::rnd();
+	m_nIn08 = CHnn_40Dlg::rnd();m_nIn09 = CHnn_40Dlg::rnd();m_nIn10 = CHnn_40Dlg::rnd();
+	m_nIn11 = CHnn_40Dlg::rnd();m_nIn13 = CHnn_40Dlg::rnd();m_nIn12 = CHnn_40Dlg::rnd();
+	m_nIn14 = CHnn_40Dlg::rnd();m_nIn15 = CHnn_40Dlg::rnd();m_nIn16 = CHnn_40Dlg::rnd();
+	m_nIn17 = CHnn_40Dlg::rnd();m_nIn18 = CHnn_40Dlg::rnd();m_nIn19 = CHnn_40Dlg::rnd();
+	m_nIn20 = CHnn_40Dlg::rnd();m_nIn21 = CHnn_40Dlg::rnd();m_nIn22 = CHnn_40Dlg::rnd();
+	m_nIn23 = CHnn_40Dlg::rnd();m_nIn24 = CHnn_40Dlg::rnd();m_nIn25 = CHnn_40Dlg::rnd();
+	m_nIn26 = CHnn_40Dlg::rnd();m_nIn27 = CHnn_40Dlg::rnd();m_nIn28 = CHnn_40Dlg::rnd();
+	m_nIn29 = CHnn_40Dlg::rnd();m_nIn30 = CHnn_40Dlg::rnd();m_nIn31 = CHnn_40Dlg::rnd();
+	m_nIn32 = CHnn_40Dlg::rnd();m_nIn33 = CHnn_40Dlg::rnd();m_nIn34 = CHnn_40Dlg::rnd();
+	m_nIn35 = CHnn_40Dlg::rnd();m_nIn36 = CHnn_40Dlg::rnd();m_nIn37 = CHnn_40Dlg::rnd();
+	m_nIn38 = CHnn_40Dlg::rnd();m_nIn39 = CHnn_40Dlg::rnd();m_nIn40 = CHnn_40Dlg::rnd();
+	m_nIn41 = CHnn_40Dlg::rnd();m_nIn42 = CHnn_40Dlg::rnd();m_nIn43 = CHnn_40Dlg::rnd();
+	m_nIn44 = CHnn_40Dlg::rnd();m_nIn45 = CHnn_40Dlg::rnd();m_nIn46 = CHnn_40Dlg::rnd();
+	m_nIn47 = CHnn_40Dlg::rnd();m_nIn48 = CHnn_40Dlg::rnd();m_nIn49 = CHnn_40Dlg::rnd();
+	m_nIn50 = CHnn_40Dlg::rnd();m_nIn51 = CHnn_40Dlg::rnd();m_nIn52 = CHnn_40Dlg::rnd();
+	m_nIn53 = CHnn_40Dlg::rnd();m_nIn54 = CHnn_40Dlg::rnd();m_nIn55 = CHnn_40Dlg::rnd();
+	m_nIn56 = CHnn_40Dlg::rnd();m_nIn57 = CHnn_40Dlg::rnd();m_nIn58 = CHnn_40Dlg::rnd();
+	m_nIn59 = CHnn_40Dlg::rnd();m_nIn60 = CHnn_40Dlg::rnd();m_nIn61 = CHnn_40Dlg::rnd();
+	m_nIn62 = CHnn_40Dlg::rnd();m_nIn63 = CHnn_40Dlg::rnd();m_nIn64 = CHnn_40Dlg::rnd();
+	m_nIn65 = CHnn_40Dlg::rnd();m_nIn66 = CHnn_40Dlg::rnd();m_nIn67 = CHnn_40Dlg::rnd();
+	m_nIn68 = CHnn_40Dlg::rnd();m_nIn69 = CHnn_40Dlg::rnd();m_nIn70 = CHnn_40Dlg::rnd();
+	m_nIn71 = CHnn_40Dlg::rnd();m_nIn72 = CHnn_40Dlg::rnd();m_nIn73 = CHnn_40Dlg::rnd();
+	m_nIn74 = CHnn_40Dlg::rnd();m_nIn75 = CHnn_40Dlg::rnd();m_nIn76 = CHnn_40Dlg::rnd();
+	m_nIn77 = CHnn_40Dlg::rnd();m_nIn78 = CHnn_40Dlg::rnd();m_nIn79 = CHnn_40Dlg::rnd();
+	m_nIn80 = CHnn_40Dlg::rnd();	
+
+	m_strAli="";
+	m_strChoi="";
+	m_strAhn="";
+	m_strPro="";
+
+	m_nTotalALI=0;
+	m_nTotalCHOI=0;
+	m_nTotalAHN=0;
+	m_nTotalPRO=0;
+
+	m_strShow="";
+
+	UpdateData(FALSE);
+	
+}
+
+//-----sigmoid function-----//
+double CHnn_40Dlg::Sigmoid_Function(double in)
+{
+	return( 1 / ( 1+ exp(-LAMBDA*in) ) );
+}
+
+//-----kronecker delta 함수 표현-----//
+double CHnn_40Dlg::Kronecker_Delta(int i, int j)
+{
+	 return( (i==j)?1:0 );
+}
+
+//-----source와 destination노드 번호 입력-----//
+void CHnn_40Dlg::Loading_Source_Desination(int Node, int Tnode)
+{
+	int i , j;
+	
+	//--1개의 source와  5개의 destination--//
+	SD[0]=1;
+	SD[1]=7;
+	SD[2]=18;
+	SD[3]=22;
+	SD[4]=35;
+	SD[5]=38;
+
+	for(i=0 ; i<Tnode ; i++){
+		for(j=0 ; j<Node ; j++){
+                        SD_order[i][j]=-10;
+		}
+	}
+}
+
+//-----각 link cost값을 dig 박스를 통하여 cost값에 전달하는 부분-----//
+void CHnn_40Dlg::Loading_Link_Information(int Node)
+{
+	int i , j;
+
+	for(i=0 ; i<Node ; i++){
+		for(j=0 ; j<Node ; j++){
+			Cost[i][j]=-1.0;
+			Gamma[i][j]=1;
+		}
+	}
+
+	Cost[0][1]=m_nIn01;Cost[0][3]=m_nIn02;Cost[0][4]=m_nIn03;Cost[0][7]=m_nIn04;
+	Cost[1][2]=m_nIn05;Cost[2][7]=m_nIn06;Cost[2][15]=m_nIn07;Cost[2][16]=m_nIn08;
+	Cost[3][5]=m_nIn09;Cost[3][7]=m_nIn10;Cost[4][5]=m_nIn11;Cost[4][6]=m_nIn12;
+	Cost[5][8]=m_nIn13;Cost[5][9]=m_nIn14;Cost[6][7]=m_nIn15;Cost[6][8]=m_nIn16;
+	Cost[6][12]=m_nIn17;Cost[6][13]=m_nIn18;Cost[6][14]=m_nIn19;Cost[7][14]=m_nIn20;
+	Cost[8][10]=m_nIn21;Cost[8][11]=m_nIn22;Cost[8][12]=m_nIn23;Cost[9][10]=m_nIn24;
+	Cost[10][11]=m_nIn25;Cost[10][12]=m_nIn26;Cost[11][12]=m_nIn27;Cost[11][21]=m_nIn28;
+	Cost[12][13]=m_nIn29;Cost[12][18]=m_nIn30;Cost[12][20]=m_nIn31;Cost[13][14]=m_nIn32;
+	Cost[13][17]=m_nIn33;Cost[13][19]=m_nIn34;Cost[14][17]=m_nIn35;Cost[15][16]=m_nIn36;
+	Cost[15][17]=m_nIn37;Cost[16][28]=m_nIn38;Cost[16][29]=m_nIn39;Cost[17][28]=m_nIn40;
+	Cost[17][18]=m_nIn41;Cost[18][19]=m_nIn42;Cost[18][26]=m_nIn43;Cost[19][20]=m_nIn44;
+	Cost[19][21]=m_nIn45;Cost[20][21]=m_nIn46;Cost[21][22]=m_nIn47;Cost[21][23]=m_nIn48;
+	Cost[22][23]=m_nIn49;Cost[22][33]=m_nIn50;Cost[22][24]=m_nIn51;Cost[23][25]=m_nIn52;
+	Cost[24][25]=m_nIn53;Cost[24][34]=m_nIn54;Cost[25][26]=m_nIn55;Cost[25][31]=m_nIn56;
+	Cost[25][32]=m_nIn57;Cost[26][27]=m_nIn58;Cost[26][30]=m_nIn59;Cost[17][27]=m_nIn60;
+	Cost[27][30]=m_nIn61;Cost[28][29]=m_nIn62;Cost[29][30]=m_nIn63;Cost[29][37]=m_nIn64;
+	Cost[30][31]=m_nIn65;Cost[30][35]=m_nIn66;Cost[31][32]=m_nIn67;Cost[31][35]=m_nIn68;
+	Cost[31][36]=m_nIn69;Cost[32][34]=m_nIn70;Cost[33][34]=m_nIn71;Cost[34][35]=m_nIn72;
+	Cost[34][39]=m_nIn73;Cost[35][36]=m_nIn74;Cost[35][39]=m_nIn75;Cost[35][38]=m_nIn76;
+	Cost[36][37]=m_nIn77;Cost[30][37]=m_nIn78;Cost[37][38]=m_nIn79;Cost[38][39]=m_nIn80;
+
+	for(i=0 ; i<Node ; i++){
+		for(j=0 ; j<Node ; j++){
+			if(Cost[i][j]==-1.0){
+				Cost[i][j]=1.0;
+				Gamma[i][j]=1;
+			}
+			else{
+				Cost[i][j]/=10000.0;
+				Gamma[i][j]=0;
+			}
+		}
+	}
+
+	for(i=0 ; i<Node ; i++){
+		for(j=0 ; j<Node ; j++){
+				Cost[j][i]=Cost[i][j];
+				Gamma[j][i]=Gamma[i][j];
+//				printf("%lf ",Cost[i][j]);
+		}
+	}
+}
+
+//-----PHI 에 대한 수식-----//
+double CHnn_40Dlg::PHI_Value(int a, int s, int d)
+{
+	double Value;
+
+	if(a==s)
+		Value=1.0;
+	else if(a==d)
+		Value=-1.0;
+	else
+		Value=0.0;
+	
+	return(Value);
+}
+
+//-----각 뉴런값 초기화 (U,V의 초기화)-----//
+void CHnn_40Dlg::Initialize_Value(int Node)
+{
+	int i , j;
+	
+	for(i=0 ; i<Node ; i++){
+		for(j=0 ; j<Node ; j++){
+			U[i][j]=0.0;
+			V[i][j]=Sigmoid_Function(U[i][j]);
+		}
+	}
+}
+
+//-----source로부터 destination까지 경로 설정이 옳바르게 되었나 확인-----//
+int CHnn_40Dlg::Check_Valid_Path(int order, int number, int s, int d)
+{
+	int i , j;
+	int Visit=-1 , Count=0 , Position=0 , Value=0;
+
+	for(i=0 ; i<number ; i++){
+		if(V[s][i]>0.8){
+			SD_order[order][0]=s;
+			SD_order[order][1]=i;
+			Visit=i;
+			Position=i;
+			Count=3;
+		}
+	}
+
+	if(d==Visit){
+		Value=Visit;
+	}
+	
+	else{
+		for(i=0 ; i<number-2 ; i++){
+			for(j=0 ; j<number ; j++){
+				
+				if(V[Position][j]>0.8){
+					if(d==j){
+						SD_order[order][Count-1]=j;
+						Visit=j;
+						Value=Visit;
+					}
+					else{
+						SD_order[order][Count-1]=j;
+						Count++;
+						Position=j;
+					}
+				}
+			}
+		}
+	}
+	
+	return(Value);
+}
+
+
+//------- Source에서 Destination까지의 움직인 경로의 수를 count -------//
+int CHnn_40Dlg::Path_Count(int order, int number)
+{
+	int i , count=0;
+	
+	for(i=0 ; i<number ; i++){
+		if(SD_order[order][i]!=-10)
+			count++;
+	}
+	return(count);
+}
+
+//------- 각 Source와 Destination사이의 Link cost 값을 저장 -------//
+double CHnn_40Dlg::Cost_Value_Save(int order, int count)
+{
+	int i;
+	double Cost_Sum=0.0;
+
+	for(i=0 ; i<count-1 ; i++){
+		Cost_Sum+=Cost[SD_order[order][i]][SD_order[order][i+1]];
+	}
+	return(Cost_Sum);
+}
+
+//-----Ali & Kamoun 알고리즘의 Mu1 Term-----//
+double CHnn_40Dlg::Ali_Mu1_Term(int x, int i, int s, int d)
+{
+	return( Cost[x][i] * (1.0 - Kronecker_Delta(x,d)*Kronecker_Delta(i,s)) );
+}
+
+//-----Ali & Kamoun 알고리즘의 Mu2 Term-----//
+double CHnn_40Dlg::Ali_Mu2_Term(int x, int i, int s, int d)
+{
+	return( (double)Gamma[x][i] * (1.0 - Kronecker_Delta(x,d)*Kronecker_Delta(i,s)) );
+}
+
+//-----Ali & Kamoun 알고리즘의 첫번째 Mu3 Term-----//
+double CHnn_40Dlg::Ali_Mu3_first_Term(int x, int Node)
+{
+	int y;
+	double Value=0.0;
+	
+	for(y=0 ; y<Node ; y++){
+		if(y!=x){
+			Value+=(V[x][y] - V[y][x]);
+		}
+	}
+	return(Value);
+}
+
+//-----Ali & Kamoun 알고리즘의 두번째 Mu3 Term-----//
+double CHnn_40Dlg::Ali_Mu3_second_Term(int i, int Node)
+{
+	int y;
+	double Value=0.0;
+	
+	for(y=0 ; y<Node ; y++){
+		if(y!=i){
+			Value+=(V[i][y] - V[y][i]);
+		}
+	}
+	return(Value);
+}
+//-----Ali & Kamoun 알고리즘의 Mu4 Term-----//
+double CHnn_40Dlg::Ali_Mu4_Term(int x, int i)
+{
+	return( 1.0 - 2.0*V[x][i] );
+}
+
+//-----Ali & Kamoun 알고리즘의 Mu5 Term-----//
+double CHnn_40Dlg::Ali_Mu5_Term(int x, int i, int s, int d)
+{
+	return( Kronecker_Delta(x,d)*Kronecker_Delta(i,s) );
+}
+
+//-----Ali & Kamoun 알고리즘의 update 수식-----//
+double CHnn_40Dlg::Ali_Update_Function(int x, int i, int s, int d, int Node)
+{
+	double Value=0.0;
+
+	if(x==d && i==s){
+		Value = U[x][i] + DELTA*( -U[x][i]/(double)TAU
+                                  -0.5*ALI_Mu1*Ali_Mu1_Term(x,i,s,d)
+                                  -0.5*ALI_Mu2*Ali_Mu2_Term(x,i,s,d)
+                                  -ALI_Mu3*Ali_Mu3_first_Term(x,Node)
+                                  +ALI_Mu3*Ali_Mu3_second_Term(i,Node)
+                                  -0.5*ALI_Mu4*Ali_Mu4_Term(x,i)
+                                  +0.5*ALI_Mu5*Ali_Mu5_Term(x,i,s,d)
+
+                                  +0.5*ALI_Mu5
+                                  -0.5*ALI_Mu4 );
+	}
+
+    else{
+		Value = U[x][i] + DELTA*( -U[x][i]/(double)TAU
+                                  -0.5*ALI_Mu1*Ali_Mu1_Term(x,i,s,d)
+                                  -0.5*ALI_Mu2*Ali_Mu2_Term(x,i,s,d)
+                                  -ALI_Mu3*Ali_Mu3_first_Term(x,Node)
+                                  +ALI_Mu3*Ali_Mu3_second_Term(i,Node)
+                                  -0.5*ALI_Mu4*Ali_Mu4_Term(x,i)
+                                  +0.5*ALI_Mu5*Ali_Mu5_Term(x,i,s,d)
+
+                                  -0.5*ALI_Mu1*Cost[x][i]
+                                  -0.5*ALI_Mu2*Gamma[x][i]
+                                  -0.5*ALI_Mu4 );
+	}
+	return(Value);
+}
+//-----Ali & Kamoun 알고리즘의 routing path 계산-----//
+void CHnn_40Dlg::Ali_Hopfield_NN(int s, int d, int Node)
+{
+	int x , i;
+	
+	for(x=0 ; x<Node ; x++){
+		for(i=0 ; i<Node ; i++){
+			U[x][i]=Ali_Update_Function(x,i,s,d,Node);
+			V[x][i]=Sigmoid_Function(U[x][i]);
+		}
+	}
+}
+
+
+//-----Park & Choi 알고리즘의 A Term-----//
+double CHnn_40Dlg::Park_A_Term(int i, int j)
+{
+	return( Cost[i][j] );
+}
+
+//-----Park & Choi 알고리즘의 B Term-----//
+double CHnn_40Dlg::Park_B_Term(int i, int j)
+{
+	return( (double)Gamma[i][j] );
+}
+
+//-----Park & Choi 알고리즘의 첫번째 C Term-----//
+double CHnn_40Dlg::Park_C_first_Term(int i, int s, int d, int Node)
+{
+	int k;
+	double Sum=0.0;
+	
+	for(k=0 ; k<Node ; k++){
+		if(k!=i)
+			Sum+=(V[i][k]-V[k][i]);
+	}
+	
+	return( Sum - PHI_Value(i,s,d) );
+}
+//-----Park & Choi 알고리즘의 두번째 C Term-----//
+double CHnn_40Dlg::Park_C_second_Term(int j, int s, int d, int Node)
+{
+	int k;
+	double Sum=0.0;
+
+	for(k=0 ; k<Node ; k++){
+		if(k!=j)
+			Sum+=(V[j][k]-V[k][j]);
+	}
+	return( Sum - PHI_Value(j,s,d) );
+}
+
+//-----Park & Choi 알고리즘의 D Term-----//
+double CHnn_40Dlg::Park_D_Term(int i, int j)
+{
+	return( 1.0- 2.0*V[i][j] );
+}
+//-----Park & Choi 알고리즘의 F Term-----//
+double CHnn_40Dlg::Park_F_Term(int i, int j)
+{
+	return( (double)Gamma[i][j] * V[j][i] );
+}
+
+//-----Park & Choi 알고리즘의 update 수식-----//
+double CHnn_40Dlg::Park_Update_Function(int i, int j, int s, int d, int Node)
+{
+	double Value=0.0;
+	
+	Value = U[i][j] + DELTA*(-U[i][j]/(double)TAU
+                            - 0.5*PARK_A*Park_A_Term(i,j)
+                            - 0.5*PARK_B*Park_B_Term(i,j)
+                            - PARK_C*Park_C_first_Term(i,s,d,Node)
+                            + PARK_C*Park_C_second_Term(j,s,d,Node)
+                            - 0.5*PARK_D*Park_D_Term(i,j)
+                            - 0.5*PARK_F*Park_F_Term(i,j)
+
+                            - 0.5*PARK_A*Cost[i][j]
+                            - 0.5*PARK_B*(double)Gamma[i][j]
+                            + PARK_C*PHI_Value(i,s,d)
+                            - PARK_C*PHI_Value(j,s,d)
+                            - 0.5*PARK_D );
+	
+	return(Value);
+}
+
+
+//-----Park & Choi 알고리즘의 routing path 계산-----//
+void CHnn_40Dlg::Park_Hopfield_NN(int s, int d, int Node)
+{
+	int x , i;
+	
+	for(x=0 ; x<Node ; x++){
+		for(i=0 ; i<Node ; i++){
+			U[x][i]=Park_Update_Function(x,i,s,d,Node);
+			V[x][i]=Sigmoid_Function(U[x][i]);
+		}
+	}
+
+}
+
+
+//-----Ahn & Ramakrishna 알고리즘의 Mu1 Term-----//
+double CHnn_40Dlg::Ahn_Mu1_Term(int i, int j)
+{
+	return( Cost[i][j] );
+}
+//-----Ahn & Ramakrishna 알고리즘의 Mu2 Term-----//
+double CHnn_40Dlg::Ahn_Mu2_Term(int i, int j)
+{
+	return( (double)Gamma[i][j] );
+}
+
+//-----Ahn & Ramakrishna 알고리즘의 첫번째 Mu3 Term-----//
+double CHnn_40Dlg::Ahn_Mu3_first_Term(int i, int s, int d, int Node)
+{
+	int k;
+	double Sum=0.0;
+	
+	for(k=0 ; k<Node ; k++){
+		if(k!=i)
+			Sum+=(V[i][k]-V[k][i]);
+	}
+	
+	return( Sum - PHI_Value(i,s,d) );
+}
+
+//-----Ahn & Ramakrishna 알고리즘의 두번째 Mu3 Term-----//
+double CHnn_40Dlg::Ahn_Mu3_second_Term(int j, int s, int d, int Node)
+{
+	int k;
+	double Sum=0.0;
+	
+	for(k=0 ; k<Node ; k++){
+		if(k!=j)
+			Sum+=(V[j][k]-V[k][j]);
+	}
+	
+	return( Sum - PHI_Value(j,s,d) );
+}
+
+//-----Ahn & Ramakrishna 알고리즘의 Mu4 Term-----//
+double CHnn_40Dlg::Ahn_Mu4_Term(int i, int j)
+{
+	return( 1.0- 2.0*V[i][j] );
+}
+
+//-----Ahn & Ramakrishna 알고리즘의 Mu5 Term-----//
+double CHnn_40Dlg::Ahn_Mu5_Term(int i, int j, int Node)
+{
+	return( (double)Gamma[i][j] * V[j][i] );
+}
+
+//-----Ahn & Ramakrishna 알고리즘의 Mu6 Term-----//
+double CHnn_40Dlg::Ahn_Mu6_Term(int i, int j, int Node)
+{
+	int k;
+	double Sum=0.0;
+	
+	for(k=0 ; k<Node ; k++){
+		if(k!=i && k!=j)
+			Sum += (V[i][k]);
+	}
+	
+	Sum-=1.0;
+	return( Sum * V[i][j] );
+}
+
+//-----Ahn & Ramakrishna 알고리즘의 Mu7 Term-----//
+double CHnn_40Dlg::Ahn_Mu7_Term(int i, int j, int Node)
+{
+	int k;
+	double Sum=0.0;
+	
+	for(k=0 ; k<Node ; k++){
+		if(k!=i && k!=j)
+			Sum += (V[k][j]);
+	}
+	Sum-=1.0;
+	
+	return( Sum * V[i][j] );
+}
+
+//-----Ahn & Ramakrishna 알고리즘의 update 수식-----//
+double CHnn_40Dlg::Ahn_Update_Function(int i, int j, int s, int d, int Node)
+{
+	double Value=0.0;
+
+	Value = U[i][j] + DELTA*(-U[i][j]/(double)TAU
+                            - 0.5*Mu1*Ahn_Mu1_Term(i,j)
+                            - 0.5*Mu2*Ahn_Mu2_Term(i,j)
+                            - Mu3*Ahn_Mu3_first_Term(i,s,d,Node)
+                            + Mu3*Ahn_Mu3_second_Term(j,s,d,Node)
+                            - 0.5*Mu4*Ahn_Mu4_Term(i,j)
+                            - 0.5*Mu5*Ahn_Mu5_Term(i,j,Node)
+                            - Mu6*Ahn_Mu6_Term(i,j,Node)
+                            - Mu7*Ahn_Mu7_Term(i,j,Node)
+
+                            - 0.5*Mu1*Cost[i][j]
+                            - 0.5*Mu2*(double)Gamma[i][j]
+                            + Mu3*PHI_Value(i,s,d)
+                            - Mu3*PHI_Value(j,s,d)
+                            - 0.5*Mu4 );
+	
+	return(Value);
+}
+//-----Ahn & Ramakrishna 알고리즘의 routing path 계산-----//
+void CHnn_40Dlg::Ahn_Hopfield_NN(int s, int d, int Node)
+{
+	int i , j;
+	
+	for(i=0 ; i<Node ; i++){
+		for(j=0 ; j<Node ; j++){
+			U[i][j]=Ahn_Update_Function(i,j,s,d,Node);
+			V[i][j]=Sigmoid_Function(U[i][j]);
+		}
+	}
+}
+
+
+
+//-----제안한 알고리즘의 A Term-----//
+double CHnn_40Dlg::Pro_A_Term(int i, int j, int Node)
+{
+	 int k;
+	 double Value=0.0;
+
+	 for(k=0 ; k<Node ; k++){
+		 if(k!=i)
+			 Value += (1.0 - Cost[i][k])*Cost[i][j];
+	 }
+
+	 return(Value);
+}
+
+//-----제안한 알고리즘의 B Term-----//
+double CHnn_40Dlg::Pro_B_Term(int i, int j)
+{
+	return( (double)Gamma[i][j] );
+
+}
+
+//-----제안한 알고리즘의 첫번째 C Term-----//
+double CHnn_40Dlg::Pro_C_first_Term(int i, int s, int d, int Node)
+{
+	int k;
+    double Sum=0.0;
+
+    for(k=0 ; k<Node ; k++){
+		if(k!=i)
+			Sum+=(V[i][k]-V[k][i]);
+	}
+	return( Sum - PHI_Value(i,s,d) );
+}
+
+//-----제안한 알고리즘의 두번째 C Term-----//
+double CHnn_40Dlg::Pro_C_second_Term(int j, int s, int d, int Node)
+{
+	int k;
+    double Sum=0.0;
+
+    for(k=0 ; k<Node ; k++){
+		if(k!=j)
+			Sum+=(V[j][k]-V[k][j]);
+	}
+	
+	return( Sum - PHI_Value(j,s,d) );
+}
+
+//-----제안한 알고리즘의 D Term-----//
+double CHnn_40Dlg::Pro_D_Term(int i, int j)
+{
+	return( 1.0- 2.0*V[i][j] );
+}
+
+//-----제안한 알고리즘의 F Term-----//
+double CHnn_40Dlg::Pro_F_Term(int i, int j, int Node)
+{
+	int k;
+    double Value=0.0;
+
+	for(k=0 ; k<Node ; k++){
+		Value += (double)Gamma[i][k] * V[k][i];
+	}
+
+	return(Value);
+}
+
+//-----제안한 알고리즘의 update 수식-----//
+double CHnn_40Dlg::Pro_Update_Function(int i, int j, int s, int d, int Node)
+{
+	double Value=0.0;
+	
+	Value = U[i][j] + DELTA*(-U[i][j]/(double)TAU
+                             - 0.5*A*Pro_A_Term(i,j,Node)
+                             - 0.5*B*Pro_B_Term(i,j)
+                             - C*Pro_C_first_Term(i,s,d,Node)
+                             + C*Pro_C_second_Term(j,s,d,Node)
+                             - 0.5*D*Pro_D_Term(i,j)
+                             - 0.5*F*Pro_F_Term(i,j,Node)
+
+                             - 0.5*A*Cost[i][j]
+                             - 0.5*B*(double)Gamma[i][j]
+                             + C*PHI_Value(i,s,d)
+                             - C*PHI_Value(j,s,d)
+                             - 0.5*D );
+	
+	return(Value);
+}
+
+
+//-----제안한 알고리즘의 routing path 계산-----//
+void CHnn_40Dlg::Pro_Hopfield_NN(int s, int d, int Node)
+{
+	int i , j;
+	
+	for(i=0 ; i<Node ; i++){
+		for(j=0 ; j<Node ; j++){
+			U[i][j]=Pro_Update_Function(i,j,s,d,Node);
+			V[i][j]=Sigmoid_Function(U[i][j]);
+		}
+	}
+}
+
+
+//-----제안한 알고리즘을 실행할 button event-----//
+void CHnn_40Dlg::OnButtonPro() 
+{
+	// TODO: Add your control notification handler code here
+	int ii , jj , Order , Check=-1;
+	int Number , Epoch , Count;
+	double T_Cost=0.0;
+	char name[200]="", name1[10]="";
+
+	CHnn_40Dlg::Loading_Source_Desination(NODE,TNODE);
+	CHnn_40Dlg::Loading_Link_Information(NODE);
+
+	for(Order=0 ; Order<TNODE-1 ; Order++){
+		Number=NODE;
+
+		//---각 unit의 값을 초기화 시킨다.---//
+		CHnn_40Dlg::Initialize_Value(NODE);
+
+		Epoch=0;
+
+		UpdateData(TRUE);
+		m_cProgress.SetRange(0, 10000);
+		BeginWaitCursor();
+
+		while(SD[Order+1]-1!=Check && Epoch<=10005){
+
+			m_cProgress.SetPos(Epoch);
+
+			Epoch++;
+			CHnn_40Dlg::Pro_Hopfield_NN(SD[Order]-1 , SD[Order+1]-1 , Number);
+			Check=CHnn_40Dlg::Check_Valid_Path(Order,Number,SD[Order]-1,SD[Order+1]-1);
+		}
+
+		for(ii=Epoch ; ii<10000; ii++){
+			m_cProgress.SetPos(ii);
+		}
+		
+		if(Epoch>=10000){
+			AfxMessageBox("Proposed Algorithm not convergence in this condition");
+			sprintf(name,"Not convergence");
+			m_strPro=name;
+			m_nTotalPRO=0.0;
+			UpdateData(FALSE);
+			break;
+		}
+		
+		//---각 S->D 마다의 거쳐간 경로의 수를 count---//
+		Count=Path_Count(Order,Number);
+		
+		//---전체 network에서의 총 link cost를 계산---//
+		T_Cost+=Cost_Value_Save(Order,Count);
+	}
+
+	if(Epoch<10000){
+		for(jj=0 ; jj<TNODE-1 ; jj++){
+			for(ii=0 ; ii<Number ; ii++){
+				if(jj==0){
+					if(SD_order[jj][ii]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+				}
+				
+				else if(jj==TNODE-2){
+					if(SD_order[jj][ii+1]!=-10 && SD_order[jj][ii+2]==-10){
+						sprintf(name1,"%d",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+					else if(SD_order[jj][ii+1]!=-10 && SD_order[jj][ii+2]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+				}
+			
+				else{
+					if(SD_order[jj][ii+1]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+					else
+						break;
+				}			
+			}
+		}
+	}
+
+	m_strPro=name;
+
+
+	
+	m_nTotalPRO=T_Cost*10000.0;
+	UpdateData(FALSE);
+
+	m_strShow="Proposed Algorithm finised.";
+	UpdateData(FALSE);
+
+
+
+}
+
+
+//-----Ali & Kamoun 알고리즘을 실행할 button event-----//
+void CHnn_40Dlg::OnButtonAli() 
+{
+	// TODO: Add your control notification handler code here
+	int ii , jj , Order , Check=-1;
+	int Number , Epoch , Count;
+	double T_Cost=0.0;
+	char name[200]="", name1[10]="";
+
+	CHnn_40Dlg::Loading_Source_Desination(NODE,TNODE);
+	CHnn_40Dlg::Loading_Link_Information(NODE);
+
+	for(Order=0 ; Order<TNODE-1 ; Order++){
+		Number=NODE;
+
+		//---각 unit의 값을 초기화 시킨다.---//
+		CHnn_40Dlg::Initialize_Value(NODE);
+
+		Epoch=0;
+
+		UpdateData(TRUE);
+		m_cProgress.SetRange(0, 10000);
+		BeginWaitCursor();
+
+		while(SD[Order+1]-1!=Check && Epoch<=10005){
+
+			m_cProgress.SetPos(Epoch);
+
+			Epoch++;
+			CHnn_40Dlg::Ali_Hopfield_NN(SD[Order]-1 , SD[Order+1]-1 , Number);
+			Check=CHnn_40Dlg::Check_Valid_Path(Order,Number,SD[Order]-1,SD[Order+1]-1);
+		}
+
+		for(ii=Epoch ; ii<10000; ii++){
+			m_cProgress.SetPos(ii);
+		}
+		
+		if(Epoch>=10000){
+			AfxMessageBox("Ali & Kamoun Algorithm not convergence in this condition");
+			sprintf(name,"Not convergence");
+			m_strAli=name;
+			m_nTotalALI=0.0;
+			UpdateData(FALSE);
+			break;
+		}
+		
+		//---각 S->D 마다의 거쳐간 경로의 수를 count---//
+		Count=Path_Count(Order,Number);
+		
+		//---전체 network에서의 총 link cost를 계산---//
+		T_Cost+=Cost_Value_Save(Order,Count);
+	}
+
+	if(Epoch<10000){
+		for(jj=0 ; jj<TNODE-1 ; jj++){
+			for(ii=0 ; ii<Number ; ii++){
+				if(jj==0){
+					if(SD_order[jj][ii]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+				}
+				
+				else if(jj==TNODE-2){
+					if(SD_order[jj][ii+1]!=-10 && SD_order[jj][ii+2]==-10){
+						sprintf(name1,"%d",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+					else if(SD_order[jj][ii+1]!=-10 && SD_order[jj][ii+2]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+				}
+			
+				else{
+					if(SD_order[jj][ii+1]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+					else
+						break;
+				}			
+			}
+		}
+	}
+
+	m_strAli=name;
+
+
+	
+	m_nTotalALI=T_Cost*10000.0;
+	UpdateData(FALSE);
+
+	m_strShow="Ali & Kamoun Algorithm finised.";
+	UpdateData(FALSE);	
+}
+
+
+//-----Park & Choi 알고리즘을 실행할 button event-----//
+void CHnn_40Dlg::OnButtonChoi() 
+{
+	// TODO: Add your control notification handler code here
+	int ii , jj , Order , Check=-1;
+	int Number , Epoch , Count;
+	double T_Cost=0.0;
+	char name[200]="", name1[10]="";
+
+	CHnn_40Dlg::Loading_Source_Desination(NODE,TNODE);
+	CHnn_40Dlg::Loading_Link_Information(NODE);
+
+	for(Order=0 ; Order<TNODE-1 ; Order++){
+		Number=NODE;
+
+		//---각 unit의 값을 초기화 시킨다.---//
+		CHnn_40Dlg::Initialize_Value(NODE);
+
+		Epoch=0;
+
+		UpdateData(TRUE);
+		m_cProgress.SetRange(0, 10000);
+		BeginWaitCursor();
+
+		while(SD[Order+1]-1!=Check && Epoch<=10005){
+
+			m_cProgress.SetPos(Epoch);
+
+			Epoch++;
+			CHnn_40Dlg::Park_Hopfield_NN(SD[Order]-1 , SD[Order+1]-1 , Number);
+			Check=CHnn_40Dlg::Check_Valid_Path(Order,Number,SD[Order]-1,SD[Order+1]-1);
+		}
+
+		for(ii=Epoch ; ii<10000; ii++){
+			m_cProgress.SetPos(ii);
+		}
+		
+		if(Epoch>=10000){
+			AfxMessageBox("Park & Choi Algorithm not convergence in this condition");
+			sprintf(name,"Not convergence");
+			m_strChoi=name;
+			m_nTotalCHOI=0.0;
+			UpdateData(FALSE);
+			break;
+		}
+		
+		//---각 S->D 마다의 거쳐간 경로의 수를 count---//
+		Count=Path_Count(Order,Number);
+		
+		//---전체 network에서의 총 link cost를 계산---//
+		T_Cost+=Cost_Value_Save(Order,Count);
+	}
+
+	if(Epoch<10000){
+		for(jj=0 ; jj<TNODE-1 ; jj++){
+			for(ii=0 ; ii<Number ; ii++){
+				if(jj==0){
+					if(SD_order[jj][ii]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+				}
+				
+				else if(jj==TNODE-2){
+					if(SD_order[jj][ii+1]!=-10 && SD_order[jj][ii+2]==-10){
+						sprintf(name1,"%d",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+					else if(SD_order[jj][ii+1]!=-10 && SD_order[jj][ii+2]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+				}
+			
+				else{
+					if(SD_order[jj][ii+1]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+					else
+						break;
+				}			
+			}
+		}
+	}
+
+	m_strChoi=name;
+
+
+	
+	m_nTotalCHOI=T_Cost*10000.0;
+	UpdateData(FALSE);
+
+	m_strShow="Park & Choi Algorithm finised.";
+	UpdateData(FALSE);	
+	
+}
+
+
+//-----Ahn & RamaKrishna 알고리즘을 실행할 button event-----//
+void CHnn_40Dlg::OnButtonAhn() 
+{
+	// TODO: Add your control notification handler code here
+	int ii , jj , Order , Check=-1;
+	int Number , Epoch , Count;
+	double T_Cost=0.0;
+	char name[200]="", name1[10]="";
+
+	CHnn_40Dlg::Loading_Source_Desination(NODE,TNODE);
+	CHnn_40Dlg::Loading_Link_Information(NODE);
+
+	for(Order=0 ; Order<TNODE-1 ; Order++){
+		Number=NODE;
+
+		//---각 unit의 값을 초기화 시킨다.---//
+		CHnn_40Dlg::Initialize_Value(NODE);
+
+		Epoch=0;
+		
+		UpdateData(TRUE);
+		m_cProgress.SetRange(0, 10000);
+		BeginWaitCursor();
+
+		while(SD[Order+1]-1!=Check && Epoch<=10005){
+
+			m_cProgress.SetPos(Epoch);
+
+			Epoch++;
+			CHnn_40Dlg::Ahn_Hopfield_NN(SD[Order]-1 , SD[Order+1]-1 , Number);
+			Check=CHnn_40Dlg::Check_Valid_Path(Order,Number,SD[Order]-1,SD[Order+1]-1);
+		}
+
+		for(ii=Epoch ; ii<10000; ii++){
+			m_cProgress.SetPos(ii);
+		}
+		
+		if(Epoch>=10000){
+			AfxMessageBox("Ahn & Ramakrishna Algorithm not convergence in this condition");
+			sprintf(name,"Not convergence");
+			m_strAhn=name;
+			m_nTotalAHN=0.0;
+			UpdateData(FALSE);
+			break;
+		}
+		
+		//---각 S->D 마다의 거쳐간 경로의 수를 count---//
+		Count=Path_Count(Order,Number);
+		
+		//---전체 network에서의 총 link cost를 계산---//
+		T_Cost+=Cost_Value_Save(Order,Count);
+	}
+
+	if(Epoch<10000){
+		for(jj=0 ; jj<TNODE-1 ; jj++){
+			for(ii=0 ; ii<Number ; ii++){
+				if(jj==0){
+					if(SD_order[jj][ii]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+				}
+				
+				else if(jj==TNODE-2){
+					if(SD_order[jj][ii+1]!=-10 && SD_order[jj][ii+2]==-10){
+						sprintf(name1,"%d",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+					else if(SD_order[jj][ii+1]!=-10 && SD_order[jj][ii+2]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+				}
+			
+				else{
+					if(SD_order[jj][ii+1]!=-10){
+						sprintf(name1,"%d->",SD_order[jj][ii+1]+1);
+						sprintf(name,"%s%s",name,name1);
+					}
+					else
+						break;
+				}			
+			}
+		}
+	}
+
+	m_strAhn=name;
+
+
+	
+	m_nTotalAHN=T_Cost*10000.0;
+	UpdateData(FALSE);
+
+	m_strShow="Ahn & Ramakrishna Algorithm finised.";
+	UpdateData(FALSE);	
+	
+}
+
+
+
